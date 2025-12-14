@@ -1,0 +1,12 @@
+README.md
+setup.py
+src/graph_iso/__init__.py
+src/graph_iso/graph.py
+src/graph_iso/isomorphism.py
+src/graph_iso/parser.py
+src/graph_iso.egg-info/PKG-INFO
+src/graph_iso.egg-info/SOURCES.txt
+src/graph_iso.egg-info/dependency_links.txt
+src/graph_iso.egg-info/top_level.txt
+tests/test_graph.py
+tests/test_isomorphism.py

@@ -17,10 +17,10 @@ class IsomorphismChecker:
             return False
 
 
-        degree_map1 = sorted(self.graph1.get_degree_mapping().items()) # this will map degree to list of nodes with that degree in graph1
-        degree_map2 = sorted(self.graph2.get_degree_mapping().items()) # this will map degree to list of nodes with that degree in graph2
+        degree_map1 = self.graph1.get_degree_mapping() # this will map degree to list of nodes with that degree in graph1
+        degree_map2 = self.graph2.get_degree_mapping() # this will map degree to list of nodes with that degree in graph2
 
-        if degree_map1.keys() != degree_map2.keys(): # necessary condition: both graphs must have same degree sequence
+        if sorted(degree_map1.keys()) != sorted(degree_map2.keys()): # necessary condition: both graphs must have same degree sequence
             return False
 
         for degree in degree_map1:

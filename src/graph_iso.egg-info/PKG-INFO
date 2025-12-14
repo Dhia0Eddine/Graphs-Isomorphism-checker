@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: graph-iso
+Version: 0.1.0
+Summary: Graph Isomorphism Checker
+Author: Your Name
+Requires-Python: >=3.8
+Dynamic: author
+Dynamic: requires-python
+Dynamic: summary

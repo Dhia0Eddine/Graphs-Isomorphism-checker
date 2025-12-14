@@ -17,15 +17,18 @@ class GraphParser:
             g.add_edge(u, v)
         return g
 
-    def load_multiple_graphs(self, file_path):
+    def load_multiple_graphs(self):
         """Load multiple graphs from a JSON file containing several graphs."""
         with open(self.file_path) as f:
             data = json.load(f)
         
         graphs = {}
         for graph_name, graph_data in data.items():
+           # print(f"Loading graph: {graph_name}")
+
             g = Graph()
             for u, v in graph_data["edges"]:
+                # print(f"Adding edge {u}-{v} to graph {graph_name}")
                 g.add_edge(u, v)
             graphs[graph_name] = g
         return graphs
