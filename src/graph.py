@@ -31,6 +31,13 @@ class Graph:
     
     def get_degree(self, u):
         return len(self.adjacency_list.get(u, []))
-    
+    def get_degree_mapping(self):
+        degree_map = {}
+        for node in self.get_nodes():
+            degree = self.get_degree(node)
+            if degree not in degree_map:
+                degree_map[degree] = []
+            degree_map[degree].append(node)
+        return degree_map
     def __str__(self):
         return str(self.adjacency_list)
