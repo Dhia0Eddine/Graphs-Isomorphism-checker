@@ -82,4 +82,4 @@ class IsomorphismChecker:
                     if mapped_v not in self.graph2.get_neighbors(mapped_u): # check if mapped_v is a neighbor of mapped_u in graph2, this checks if adjacency is preserved for this pair of nodes
                         return False
         return True
-        
+    
