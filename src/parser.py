@@ -2,25 +2,30 @@
 from .graph import Graph  # import your Graph class
 import json
 
-def load_graph_from_json(file_path):
-    """Load a single graph from a JSON file."""
-    with open(file_path) as f:
-        data = json.load(f)
+class GraphParser:
+    def __init__(self, file_path):
+        self.file_path = file_path
     
-    g = Graph()
-    for u, v in data["edges"]:
-        g.add_edge(u, v)
-    return g
-
-def load_multiple_graphs(file_path):
-    """Load multiple graphs from a JSON file containing several graphs."""
-    with open(file_path) as f:
-        data = json.load(f)
-    
-    graphs = {}
-    for graph_name, graph_data in data.items():
+    """Class to parse graph data from JSON files."""
+    def load_graph_from_json(self):
+        """Load a single graph from a JSON file."""
+        with open(self.file_path) as f:
+            data = json.load(f)
+        
         g = Graph()
-        for u, v in graph_data["edges"]:
+        for u, v in data["edges"]:
             g.add_edge(u, v)
-        graphs[graph_name] = g
-    return graphs
+        return g
+
+    def load_multiple_graphs(self, file_path):
+        """Load multiple graphs from a JSON file containing several graphs."""
+        with open(self.file_path) as f:
+            data = json.load(f)
+        
+        graphs = {}
+        for graph_name, graph_data in data.items():
+            g = Graph()
+            for u, v in graph_data["edges"]:
+                g.add_edge(u, v)
+            graphs[graph_name] = g
+        return graphs
