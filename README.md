@@ -104,7 +104,3 @@ Testing
 python -m pytest
 ```
 
-License
--------
-
-MIT. See `LICENSE` (add one if needed) or include attribution in derivative works.
