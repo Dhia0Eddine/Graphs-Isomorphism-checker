@@ -9,46 +9,76 @@ class IsomorphismChecker:
         self.graph1 = graph1
         self.graph2 = graph2
 
-    def are_isomorphic(self):
+    def are_isomorphic(self, trace_callback=None):
         nodes1 = self.graph1.get_nodes()
         nodes2 = self.graph2.get_nodes()
 
-        if len(nodes1) != len(nodes2): #  they cant be isomorphic if they have different number of nodes
+        mapping = {}  # node from graph1 to node from graph2
+        used = set()  # nodes in graph2 that are already mapped
+        rejection_tracker = {}  # records rejected candidates per node for tracing
+
+        step_counter = {"value": 0}
+
+        def emit(event, **kwargs):
+            if not trace_callback:
+                return
+
+            step_counter["value"] += 1
+            payload = {
+                "step": step_counter["value"],
+                "event": event,
+                "mapping": dict(mapping),
+                "used_nodes": sorted(list(used)),
+                "current_node": kwargs.get("current_node"),
+                "candidate": kwargs.get("candidate"),
+                "rejected_candidates": sorted(list(kwargs.get("rejected_candidates", []))),
+                "message": kwargs.get("message"),
+            }
+            trace_callback(payload)
+
+        if len(nodes1) != len(nodes2):  # they cant be isomorphic if they have different number of nodes
+            emit(
+                "precheck_failed",
+                message="Graphs have different numbers of nodes, so they cannot be isomorphic.",
+            )
             return False
 
+        degree_map1 = self.graph1.get_degree_mapping()  # this will map degree to list of nodes with that degree in graph1
+        degree_map2 = self.graph2.get_degree_mapping()  # this will map degree to list of nodes with that degree in graph2
 
-        degree_map1 = self.graph1.get_degree_mapping() # this will map degree to list of nodes with that degree in graph1
-        degree_map2 = self.graph2.get_degree_mapping() # this will map degree to list of nodes with that degree in graph2
-
-        if sorted(degree_map1.keys()) != sorted(degree_map2.keys()): # necessary condition: both graphs must have same degree sequence
+        if sorted(degree_map1.keys()) != sorted(degree_map2.keys()):  # necessary condition: both graphs must have same degree sequence
+            emit(
+                "precheck_failed",
+                message="Graphs have different degree sequences, so they cannot be isomorphic.",
+            )
             return False
 
         for degree in degree_map1:
-            if len(degree_map1[degree]) != len(degree_map2[degree]): # necessary condition: same number of nodes with same degree
+            if len(degree_map1[degree]) != len(
+                degree_map2[degree]
+            ):  # necessary condition: same number of nodes with same degree
+                emit(
+                    "precheck_failed",
+                    message=f"Graphs differ in the number of nodes with degree {degree}.",
+                )
                 return False
 
-        mapping = {} # node from graph1 to node from graph2
-        used = set() # nodes in graph2 that are already mapped
-        
-
-        """
-        recursive backtracking function to find valid mapping
-        it works by assuming a mapping for the current node and checking if it leads to a valid solution
-        if not, it backtracks and tries the next possible mapping
-        and so on until all nodes are processed
-        if a valid mapping is found, it returns True
-        else, it returns False
-        it takes the current index of node in nodes1 to process 
-
-        """
-
         def backtrack(index):
-            if index == len(nodes1): #  this is the base case, all nodes have been processed
+            if index == len(nodes1):  # this is the base case, all nodes have been processed
+                emit("complete", message="Isomorphism found. All nodes mapped successfully.")
                 return True
 
             current_node = nodes1[index]
+            rejection_tracker[current_node] = set()
             current_degree = self.graph1.get_degree(current_node)
-            possible_nodes = degree_map2[current_degree] # get nodes in graph2 with same degree as current_node
+            possible_nodes = degree_map2[current_degree]  # get nodes in graph2 with same degree as current_node
+
+            emit(
+                "select_node",
+                current_node=current_node,
+                rejected_candidates=rejection_tracker[current_node],
+                message=f"Selecting node {current_node} for mapping.",
+            )
 
             for candidate in possible_nodes:
                 if candidate in used:
@@ -57,22 +87,66 @@ class IsomorphismChecker:
                 # assume mapping
                 mapping[current_node] = candidate
                 used.add(candidate)
+                emit(
+                    "try_candidate",
+                    current_node=current_node,
+                    candidate=candidate,
+                    rejected_candidates=rejection_tracker[current_node],
+                    message=f"Trying to map {current_node} -> {candidate}.",
+                )
 
                 if self.is_valid_mapping(mapping):
+                    emit(
+                        "partial_valid",
+                        current_node=current_node,
+                        candidate=candidate,
+                        rejected_candidates=rejection_tracker[current_node],
+                        message="Partial mapping valid so far.",
+                    )
                     if backtrack(index + 1):
                         return True
-                
 
+                rejection_tracker[current_node].add(candidate)
+                emit(
+                    "reject_candidate",
+                    current_node=current_node,
+                    candidate=candidate,
+                    rejected_candidates=rejection_tracker[current_node],
+                    message=f"Mapping {current_node} -> {candidate} rejected.",
+                )
 
                 # backtrack
-                del mapping[current_node] # remove the assumed mapping
-                used.remove(candidate) # mark candidate as unused for future mappings
+                del mapping[current_node]  # remove the assumed mapping
+                used.remove(candidate)  # mark candidate as unused for future mappings
 
-                return False
-            
-        return backtrack(0) # start backtracking from the first node, this will initiate the backtracking process in the isomorphism checker
+            emit(
+                "backtrack",
+                current_node=current_node,
+                rejected_candidates=rejection_tracker[current_node],
+                message=f"Backtracking from node {current_node}.",
+            )
+            return False
+
+        result = backtrack(0)  # start backtracking from the first node
+
+        if not result:
+            emit("failure", message="No isomorphism found after exploring all mappings.")
+
+        return result
             
                
+    def trace_states(self):
+        """Run the isomorphism check while recording each decision step."""
+
+        timeline = []
+
+        def recorder(state):
+            # make a shallow copy of the state so downstream consumers can mutate safely
+            timeline.append(dict(state))
+
+        result = self.are_isomorphic(trace_callback=recorder)
+        return result, timeline
+
     def is_valid_mapping(self, mapping): # this function checks if the current mapping preserves adjacency,
         for u in mapping: # for each mapped node in graph1, mapping is of the form {node_in_graph1: node_in_graph2} so u will hold tha value of node_in_graph1
             mapped_u = mapping[u] # get the corresponding node in graph2
